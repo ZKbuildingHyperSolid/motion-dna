@@ -14,6 +14,18 @@ npx skills add ZKbuildingHyperSolid/motion-dna
 
 兼容 40+ 种 Agent，包括 Claude Code、Cursor、GitHub Copilot。
 
+## 环境配置
+
+首次使用时，motion-dna 会自动检测你的环境并显示配置清单。零配置也能用，但安装以下工具可以大幅提升精度：
+
+| 工具 | 对 motion-dna 的作用 | 配置方式 |
+|------|---------------------|---------|
+| **Playwright + Chromium**（推荐） | 用真实浏览器加载页面，提取精确的 CSS 值、@keyframes 和动效库配置 | `npx playwright install chromium` |
+| **Computer Use**（推荐） | 让 Claude 真正看到动效播放，验证参数准确性 | `/mcp` → 启用 `computer-use` → 授权 macOS 权限 |
+| **Claude in Chrome**（可选） | 直接操控浏览器 | 安装 Chrome 扩展 → `claude --chrome` |
+
+不做任何配置时，motion-dna 仍可通过 WebFetch + 截图工作 — 精度较低但可用。
+
 ## 工作原理
 
 ### Capture + Apply（默认模式）

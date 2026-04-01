@@ -6,6 +6,72 @@
 
 ---
 
+## First-Run Setup
+
+**On the very first trigger of this skill, run environment detection before doing anything else.** Present the results as a setup checklist so the user knows what's ready and what to configure.
+
+### Detection script
+
+Run these checks via Bash:
+
+```bash
+# 1. Playwright
+npx playwright --version 2>/dev/null
+
+# 2. Chromium for Playwright
+npx playwright install --dry-run 2>&1 | head -3
+
+# 3. Computer Use MCP (check if enabled)
+# Look for computer-use in MCP config
+
+# 4. Claude in Chrome
+# Check if chrome extension tools are available
+```
+
+### Present setup checklist
+
+Show the user a checklist like this:
+
+---
+
+> **motion-dna Setup Checklist**
+>
+> I've checked your environment. Here's what's ready and what you can optionally set up for better results:
+>
+> **Required for best results:**
+> - [ ] **Playwright + Chromium** — Lets me load web pages in a real browser and extract exact animation parameters (CSS values, @keyframes, library configs)
+>   → Run: `npx playwright install chromium`
+>
+> **Recommended (significantly improves accuracy):**
+> - [ ] **Computer Use** — Lets me open a browser and visually see animations playing, verify easing curves, and catch interaction-triggered animations (hover, scroll)
+>   → Run `/mcp` in Claude Code → find `computer-use` → Enable → Grant macOS Accessibility + Screen Recording permissions
+>
+> **Optional (nice to have):**
+> - [ ] **Claude in Chrome** — Lets me interact directly with pages in your Chrome browser
+>   → Install the "Claude in Chrome" extension from Chrome Web Store → Run `claude --chrome`
+>
+> **Without any of these**, I can still work using WebFetch + your screenshots, but accuracy will be lower and estimated values will be marked `[estimated]`.
+>
+> Which of these would you like to set up now? Or say "skip" to proceed with what's available.
+
+---
+
+Mark items as ✅ if already detected. Only show unchecked items that are missing.
+
+**After setup is complete (or skipped), remember the available capabilities for this session** and route extraction through the best available tool:
+
+| Available tools | Extraction strategy |
+|----------------|-------------------|
+| Playwright + Computer Use | **Best:** Programmatic extraction + visual verification |
+| Playwright only | **Great:** Programmatic extraction, no visual verification |
+| Computer Use only | **Good:** Visual observation, parameter estimation |
+| WebFetch only | **Basic:** SSR content only, guide user to paste source code |
+| Nothing (screenshots only) | **Minimal:** Visual estimation, all values marked `[estimated]` |
+
+**Skip this checklist on subsequent triggers** — only show it once per project. If capabilities change, the user can say "motion-dna setup" to re-run the check.
+
+---
+
 ## Overview
 
 Two modes for working with UI motion:

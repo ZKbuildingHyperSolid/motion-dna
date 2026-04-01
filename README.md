@@ -14,6 +14,18 @@ npx skills add ZKbuildingHyperSolid/motion-dna
 
 Works with 40+ agents including Claude Code, Cursor, and GitHub Copilot.
 
+## Setup
+
+On first use, motion-dna checks your environment and shows a setup checklist. You can use it immediately with zero config, but installing these tools significantly improves accuracy:
+
+| Tool | What it does for motion-dna | How to set up |
+|------|----------------------------|---------------|
+| **Playwright + Chromium** (recommended) | Loads pages in a real browser, extracts exact CSS values, @keyframes, and library configs | `npx playwright install chromium` |
+| **Computer Use** (recommended) | Lets Claude visually see animations playing and verify parameters | `/mcp` → enable `computer-use` → grant macOS permissions |
+| **Claude in Chrome** (optional) | Direct browser interaction | Install Chrome extension → `claude --chrome` |
+
+Without any setup, motion-dna still works using WebFetch + your screenshots — accuracy is lower but functional.
+
 ## How It Works
 
 ### Capture + Apply (Default)
