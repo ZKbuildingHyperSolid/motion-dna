@@ -1,44 +1,104 @@
 # motion-dna
 
-**从任意参考来源逆向工程、结构化、复刻 UI 动效。**
+**从任意参考来源逆向工程、复刻 UI 动效 — 自动适配你的设计系统。**
 
-一个 Agent Skill，从 URL、源码或截图中提取动效参数，输出结构化的 Motion DNA JSON 规范，再基于规范生成任意目标技术栈的可运行动效代码。
+一个 Agent Skill，从任意网站提取动效参数，将颜色和阴影适配到你的主题，然后将动效代码直接写入你的项目。
 
-> [design-dna](https://github.com/zanwei/design-dna) 的动效伙伴。design-dna 捕捉视觉风格；motion-dna 捕捉事物如何运动。两者输出兼容的 JSON，可合并为单一可移植规范。
+> [design-dna](https://github.com/zanwei/design-dna) 的动效伙伴。design-dna 捕捉视觉风格；motion-dna 捕捉事物如何运动。两者输出兼容的 JSON，可合并使用。
 
 ## 安装
 
 ```bash
-npx skills add <your-username>/motion-dna
+npx skills add ZKbuildingHyperSolid/motion-dna
 ```
 
 兼容 40+ 种 Agent，包括 Claude Code、Cursor、GitHub Copilot。
 
 ## 工作原理
 
+### Capture + Apply（默认模式）
+
+主要工作流 — 指向你喜欢的动效，motion-dna 将它应用到你的项目：
+
 ```
-参考来源                    Motion DNA JSON              代码输出
-───────────────            ─────────────────            ───────────
-URL / 源码 / 截图    →     结构化动效参数规范     →     任意技术栈代码
+1. 你: "把这个 hover 效果复制到我的 card 组件" + 截图
+   ↓
+2. motion-dna: 用 Playwright 加载页面，提取精确参数
+   ↓
+3. motion-dna: 将颜色/阴影适配到你的 design tokens
+   ↓
+4. motion-dna: 将动效代码直接写入你的组件文件
 ```
 
-### 三种模式
+**怎么说：**
+- "把这个动效复制到我的项目" + 截图/URL
+- "让我的 hero 区域动起来像这个网站"
+- "我想要这个 hover 效果用在我的卡片上"
+- "这个动效是怎么实现的？" + URL
 
-| 模式 | 使用指令 | 功能 |
-|------|----------|------|
-| **分析动效** | "analyze motion [URL]" | 仅提取 Motion DNA JSON |
-| **分析设计+动效** | "analyze design+motion [URL]" | design-dna + motion-dna 合并输出 |
-| **生成代码** | "generate react-framer" | 将现有 JSON 转为可运行代码 |
+**你提供什么 → 你得到什么：**
 
-### 输入来源
+| 你的输入 | 结果 |
+|---------|------|
+| 截图 + "我要这个淡入效果" | 识别动效，询问应用到哪个组件 |
+| URL + "复制 hero 动效" | 加载页面，提取 hero 动效，写入你的文件 |
+| 截图 + URL + 描述 | 最高精度 — 视觉参考 + 源码提取 |
 
-| 来源 | 精度 | 说明 |
-|------|------|------|
-| 前端源码 (CSS/JS/TS) | **最高** | 直接解析，参数级精度 |
-| 线上 URL | 高 | 抓取 DOM + computed styles + JS 库 |
-| 截图 / 视频录屏 | 中-低 | 视觉估算，标注 `[estimated]` |
+### Motion Audit（动效审计）
 
-**最佳实践：** URL + DevTools 导出的源码片段组合使用，精度最优。
+全页动效提取，用于文档化或竞品分析：
+
+```
+你: "审计 linear.app 的所有动效"
+   ↓
+motion-dna: 分类汇总找到的 23 条动效
+   ↓
+你: "把 hero-title-enter 应用到我的项目"
+   ↓
+motion-dna: 写入你的组件
+```
+
+**怎么说：**
+- "审计这个页面的所有动效"
+- "分析这个网站的动效系统"
+- "分析设计+动效"（与 design-dna 联动）
+
+## 核心特性
+
+### 智能提取
+
+使用 Playwright 在真实浏览器中加载页面 — 处理 SPA、客户端渲染和动态加载的动效。Playwright 不可用时降级为 WebFetch。
+
+所有参数精确到参数级别：
+- **Easing / Timing** — cubic-bezier 值、duration、delay
+- **Transform 序列** — translateX/Y、scale、rotate、opacity、clip-path、blur
+- **Spring 物理参数** — stiffness、damping、mass、velocity
+- **Stagger / 编排** — 子元素编排延迟、序列时序
+- **Scroll 驱动** — ScrollTrigger、IntersectionObserver、parallax
+- **视觉效果** — Shader、WebGL、粒子、光标效果、文字效果
+
+### 设计感知适配
+
+将动效应用到你的项目时，motion-dna 区分**运动参数**（直接复制）和**设计参数**（适配你的主题）：
+
+| 直接复制 | 适配你的主题 |
+|---------|-------------|
+| Duration、easing、delay | 颜色、背景色 |
+| Transform（translate、scale、rotate） | Box-shadow 色值 |
+| Spring 物理参数 | 渐变色 |
+| Stagger 节奏 | Border 色值 |
+| Opacity 变化量 | Text-shadow 色值 |
+
+深色主题的 hover 效果应用到你的浅色项目时，会使用你的 `--shadow-color` 和 `--color-surface` token，而不是硬编码的深色值。
+
+### 直接写入代码
+
+motion-dna 将动效代码直接写入你的项目文件 — 无需 copy-paste。它会：
+- 从 `package.json` 自动检测你的技术栈
+- 遵循你现有的代码风格
+- 导入所需库
+- 添加 `prefers-reduced-motion` 无障碍支持
+- 包含 `// motion-dna: {id}` 可追溯注释
 
 ### 目标技术栈
 
@@ -50,72 +110,17 @@ URL / 源码 / 截图    →     结构化动效参数规范     →     任意�
 | `html-css` | 原生 HTML/CSS（无 JS 库）|
 | `vue-gsap` | Vue 3 + GSAP |
 
-## 捕捉维度
-
-每条动效精确到参数级别：
-
-- **Easing / Timing** — cubic-bezier 值、duration、delay
-- **Transform 序列** — translateX/Y、scale、rotate、opacity、clip-path、blur
-- **Spring 物理参数** — stiffness、damping、mass、velocity
-- **Stagger / 编排** — 子元素编排延迟、序列时序、并发/顺序逻辑
-- **Scroll 驱动** — ScrollTrigger、IntersectionObserver、scroll-timeline、parallax
-- **视觉效果** — Shader、WebGL、粒子、光标效果、SVG 动画、文字效果
-
-## 示例输出
-
-```json
-{
-  "motion_dna": {
-    "meta": {
-      "source": "https://example.com",
-      "captured_at": "2026-04-01T12:00:00Z",
-      "overall_confidence": "high",
-      "libraries_detected": ["gsap", "ScrollTrigger", "Lenis"],
-      "motion_personality": "干脆利落，带有滚动驱动的深度感"
-    },
-    "global_defaults": {
-      "duration_base_ms": 400,
-      "easing_default": "cubic-bezier(0.16, 1, 0.3, 1)",
-      "distance_unit": "px",
-      "reduced_motion_strategy": "fade-only"
-    },
-    "animations": [
-      {
-        "id": "hero-title-enter",
-        "label": "首屏标题加载淡入上移",
-        "trigger": "load",
-        "target": ".hero h1",
-        "duration_ms": 800,
-        "delay_ms": 200,
-        "easing": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "properties": {
-          "opacity": ["0", "1"],
-          "translateY": ["40px", "0px"]
-        },
-        "confidence": "high"
-      }
-    ]
-  }
-}
-```
-
-## 设计原则
-
-- **Spec 纯净** — JSON 只存参数，不混入代码，保证跨栈可移植性
-- **置信度透明** — 每个值标注 High/Medium/Low；估算值标记 `[estimated]`
-- **不伪造数据** — 未知值为 `null`，绝不猜测
-- **无障碍内置** — 所有生成代码包含 `@media (prefers-reduced-motion)` 支持
-- **可追溯** — 生成代码包含 `// motion-dna: {id}` 注释，链接回规范
+技术栈从你的项目自动检测。如果没有动效库，motion-dna 会推荐一个并在安装前征求你的同意。
 
 ## 与 design-dna 的关系
 
 | | design-dna | motion-dna |
 |---|---|---|
 | 聚焦 | 视觉设计 Token | 动效参数 |
-| 动效支持 | 极少，低精度 | 完整，参数级 |
+| 动效支持 | 极少 | 完整，参数级 |
 | JSON 兼容 | — | ✅ 可合并 |
 
-联动使用时：
+联动使用时（`analyze design+motion`）：
 
 ```json
 {
@@ -131,7 +136,7 @@ URL / 源码 / 截图    →     结构化动效参数规范     →     任意�
 - [项目背景](docs/01-brief.md) — 背景与定位
 - [项目介绍](docs/02-project-intro.md) — 完整功能概览
 - [项目目标](docs/03-goals.md) — 技术与产品目标
-- [Schema 参考](references/schema.md) — 完整字段说明
+- [Schema 参考](references/schema.md) — Motion DNA JSON 完整字段说明
 - [代码生成指南](references/generation-guide.md) — 各栈代码生成规范
 
 ## 许可证

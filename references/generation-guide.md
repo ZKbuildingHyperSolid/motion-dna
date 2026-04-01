@@ -4,6 +4,27 @@ How to convert Motion DNA JSON into working animation code for each supported st
 
 ---
 
+## Writing Mode
+
+In **capture+apply** mode (default), code is written directly into the user's project file using the Edit tool — not as standalone code blocks. In **motion audit** mode, code can be presented as standalone blocks if the user requests generation.
+
+---
+
+## Stack Auto-Detection
+
+Before generating, detect the user's stack from their project:
+
+| Signal in `package.json` | Stack |
+|--------------------------|-------|
+| `framer-motion` in dependencies | `react-framer` |
+| `gsap` + `react` / `next` | `react-gsap` |
+| `gsap` + `vue` / `nuxt` | `vue-gsap` |
+| `gsap` alone (no framework) | `html-gsap` |
+| No animation library + React | Recommend `framer-motion`, ask |
+| No animation library + no framework | `html-css` |
+
+---
+
 ## Priority Sequence
 
 When generating code from a Motion DNA JSON:
@@ -13,7 +34,8 @@ When generating code from a Motion DNA JSON:
 3. **Scroll System** — Scroll triggers, scrub, parallax, smooth scroll
 4. **Spring Physics** — Replace easing with spring where specified
 5. **Visual Effects** — Shaders, particles, cursor effects, etc.
-6. **Reduced Motion** — `@media (prefers-reduced-motion)` handling
+6. **Design Parameter Adaptation** — Map colors/shadows to user's tokens
+7. **Reduced Motion** — `@media (prefers-reduced-motion)` handling
 
 ---
 
@@ -497,6 +519,81 @@ requestAnimationFrame(raf);
 
 ---
 
+## Design Parameter Adaptation
+
+When writing animation code into the user's project, design parameters must be adapted to the user's design system.
+
+### What to adapt
+
+| Parameter | Adaptation |
+|-----------|-----------|
+| `box-shadow` color | Replace color with user's `--shadow-color` or nearest semantic token |
+| `background` / `color` in transitions | Map to `--color-surface`, `--color-primary`, etc. |
+| `gradient` colors | Preserve direction + stops, replace colors with user tokens |
+| `border-color` | Map to `--color-border` or nearest match |
+| `text-shadow` color | Map to nearest semantic token |
+
+### Shadow adaptation example
+
+**Reference (dark theme):**
+```css
+.card:hover {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  background: #1a1a2e;
+}
+```
+
+**Adapted (user's light theme with tokens):**
+```css
+/* motion-dna: card-hover */
+.card:hover {
+  box-shadow: 0 20px 60px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  background: var(--color-surface-hover);
+}
+```
+
+Note: The shadow _structure_ (0 20px 60px) is preserved — only the color is adapted.
+
+### Background transition example
+
+**Reference:**
+```tsx
+// Dark theme gradient animation
+<motion.div
+  animate={{ background: ["#0a0a0a", "#1a1a2e"] }}
+  transition={{ duration: 2, repeat: Infinity }}
+/>
+```
+
+**Adapted:**
+```tsx
+// motion-dna: bg-pulse
+<motion.div
+  animate={{
+    background: [
+      "var(--color-surface)",
+      "var(--color-surface-hover)"
+    ]
+  }}
+  transition={{ duration: 2, repeat: Infinity }}
+/>
+```
+
+### No tokens found
+
+If the user's project has no design tokens, use neutral values with comments:
+
+```css
+/* motion-dna: card-hover
+   TODO: Replace these colors with your design tokens */
+.card:hover {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  background: #f8f9fa;
+}
+```
+
+---
+
 ## Reduced Motion Handling
 
 All generated code MUST include `prefers-reduced-motion` support.
@@ -559,6 +656,7 @@ Before delivering generated code, verify:
 - [ ] `prefers-reduced-motion` handling is implemented
 - [ ] Choreography sequences are wired in correct order
 - [ ] Spring physics use stack-native implementation
-- [ ] Code is self-contained and copy-paste ready
+- [ ] Design parameters adapted to user's tokens (not hardcoded from reference)
+- [ ] In capture+apply mode: code written directly into user's file via Edit tool
 - [ ] Stagger `from` direction is correctly mapped
 - [ ] Scroll triggers use correct start/end positions
